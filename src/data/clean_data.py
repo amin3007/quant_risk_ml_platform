@@ -29,10 +29,14 @@ NUMERIC_COLUMNS = [
 ]
 
 
+# Creates output folders for cleaned data and reports when the pipeline is run
+# on a fresh checkout.
 def ensure_output_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
+# Loads the raw market CSV produced by the fetch pipeline and rejects missing or
+# empty inputs before any cleaning logic runs.
 def load_raw_data(input_file: Path) -> pd.DataFrame:
     if not input_file.exists():
         raise FileNotFoundError(f"Raw data file not found: {input_file}")
@@ -45,6 +49,8 @@ def load_raw_data(input_file: Path) -> pd.DataFrame:
     return data
 
 
+# Enforces the canonical market-data schema required by the cleaning, reporting,
+# and return-calculation stages.
 def validate_required_columns(data: pd.DataFrame) -> None:
     missing_columns = [
         column for column in REQUIRED_COLUMNS if column not in data.columns
@@ -54,18 +60,26 @@ def validate_required_columns(data: pd.DataFrame) -> None:
         raise ValueError(f"Missing required columns: {missing_columns}")
 
 
+# Converts raw downloaded prices into an analysis-ready table with valid dates,
+# numeric price fields, one row per ticker/date, and no missing required values.
 def clean_market_data(data: pd.DataFrame) -> pd.DataFrame:
     validate_required_columns(data)
 
     cleaned_data = data.copy()
 
+    # Coercion turns invalid dates or price strings into missing values so the
+    # rows can be handled consistently by the data-quality rules below.
     cleaned_data["Date"] = pd.to_datetime(cleaned_data["Date"], errors="coerce")
 
     for column in NUMERIC_COLUMNS:
         cleaned_data[column] = pd.to_numeric(cleaned_data[column], errors="coerce")
 
+    # A valid date, ticker, and adjusted close price are the minimum fields
+    # needed for reliable time-series analysis and return calculation.
     cleaned_data = cleaned_data.dropna(subset=["Date", "Ticker", "Adj Close"])
 
+    # Duplicate ticker/date observations would distort returns, so the most
+    # recent downloaded record is kept as the authoritative value.
     cleaned_data = cleaned_data.drop_duplicates(
         subset=["Date", "Ticker"],
         keep="last",
@@ -77,6 +91,8 @@ def clean_market_data(data: pd.DataFrame) -> pd.DataFrame:
 
     cleaned_data[NUMERIC_COLUMNS] = cleaned_data.groupby("Ticker")[NUMERIC_COLUMNS].ffill()
 
+    # Remaining missing numeric values after forward fill indicate incomplete
+    # price histories that should not be passed to downstream calculations.
     cleaned_data = cleaned_data.dropna(subset=NUMERIC_COLUMNS)
 
     cleaned_data = cleaned_data[REQUIRED_COLUMNS]
@@ -84,6 +100,8 @@ def clean_market_data(data: pd.DataFrame) -> pd.DataFrame:
     return cleaned_data
 
 
+# Builds a markdown audit report so reviewers can see how much data was removed
+# and whether each ticker still has a usable historical range after cleaning.
 def create_data_quality_report(raw_data: pd.DataFrame, cleaned_data: pd.DataFrame) -> str:
     raw_rows = len(raw_data)
     cleaned_rows = len(cleaned_data)
@@ -130,12 +148,15 @@ def create_data_quality_report(raw_data: pd.DataFrame, cleaned_data: pd.DataFram
     return "\n".join(report)
 
 
+# Writes the cleaned price dataset used as the source for returns and later risk
+# metrics.
 def save_cleaned_data(data: pd.DataFrame, output_file: Path) -> None:
     ensure_output_directory(output_file.parent)
     data.to_csv(output_file, index=False)
     print(f"Cleaned market data saved to: {output_file}")
 
 
+# Stores the human-readable data quality report alongside other project reports.
 def save_quality_report(report: str) -> None:
     reports_dir = Path("reports")
     ensure_output_directory(reports_dir)
@@ -146,6 +167,8 @@ def save_quality_report(report: str) -> None:
     print(f"Data quality report saved to: {output_file}")
 
 
+# Orchestrates the cleaning stage from raw CSV input through cleaned dataset and
+# markdown report output.
 def run_cleaning_pipeline() -> pd.DataFrame:
     print("Loading raw market data...")
     raw_data = load_raw_data(RAW_INPUT_FILE)

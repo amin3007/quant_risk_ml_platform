@@ -9,6 +9,7 @@ from src.config import ASSETS, DATA_RAW_DIR, START_DATE, END_DATE
 RAW_OUTPUT_FILE = DATA_RAW_DIR / "prices_raw.csv"
 
 
+# Creates parent folders before writing pipeline outputs to disk.
 def ensure_output_directory(path: Path) -> None:
     """
     Ensures that the output directory exists.
@@ -32,9 +33,13 @@ def download_market_data(
     Returns:
         Raw yfinance DataFrame with MultiIndex columns.
     """
+    # Empty ticker input is a data-quality issue because yfinance would return
+    # no useful market history for the downstream pipeline.
     if not tickers:
         raise ValueError("Ticker list must not be empty.")
 
+    # yfinance returns one column group per ticker; normalization below converts
+    # that vendor-specific shape into a project-friendly tabular format.
     data = yf.download(
         tickers=tickers,
         start=start_date,
@@ -45,6 +50,8 @@ def download_market_data(
         progress=False,
     )
 
+    # Failing fast here prevents later cleaning steps from producing misleading
+    # empty CSV files when the date range or ticker symbols are invalid.
     if data.empty:
         raise ValueError("No market data was downloaded. Check tickers or date range.")
 
@@ -60,6 +67,8 @@ def normalize_market_data(raw_data: pd.DataFrame, tickers: list[str]) -> pd.Data
     """
     normalized_frames = []
 
+    # Each ticker is extracted independently so a missing or malformed asset can
+    # be skipped without discarding all successfully downloaded market data.
     for ticker in tickers:
         if ticker not in raw_data.columns.get_level_values(0):
             print(f"Warning: No data found for ticker {ticker}. Skipping.")
@@ -84,6 +93,8 @@ def normalize_market_data(raw_data: pd.DataFrame, tickers: list[str]) -> pd.Data
             column for column in expected_columns if column not in ticker_data.columns
         ]
 
+        # The downstream cleaning and return calculations rely on this exact
+        # schema, especially adjusted close prices for total-return accuracy.
         if missing_columns:
             print(
                 f"Warning: Ticker {ticker} is missing columns: {missing_columns}. "
@@ -107,6 +118,8 @@ def normalize_market_data(raw_data: pd.DataFrame, tickers: list[str]) -> pd.Data
     return normalized_data
 
 
+# Persists the normalized raw market data as the first reproducible pipeline
+# artifact before cleaning and feature calculations are applied.
 def save_raw_data(data: pd.DataFrame, output_file: Path) -> None:
     """
     Saves downloaded market data as CSV.
@@ -124,6 +137,8 @@ def fetch_and_save_market_data() -> pd.DataFrame:
     3. Normalizes the output.
     4. Saves the raw long-format CSV.
     """
+    # The config dictionary is the single source of truth for the MVP asset
+    # universe, keeping data download aligned with later analytics.
     tickers = list(ASSETS.keys())
 
     print("Starting market data download...")
