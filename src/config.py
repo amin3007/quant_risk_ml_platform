@@ -5,6 +5,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_RAW_DIR = PROJECT_ROOT / "data" / "raw"
 DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 
+REPORTS_DIR = PROJECT_ROOT / "reports"
+FIGURES_DIR = REPORTS_DIR / "figures"
+
 START_DATE = "2018-01-01"
 END_DATE = None
 
