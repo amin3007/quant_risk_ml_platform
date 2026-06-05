@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from src.data.csv_integrity import read_validate_csv
+
 from src.config import (
     DATA_PROCESSED_DIR,
     REPORTS_DIR,
@@ -31,14 +33,11 @@ def ensure_output_directories() -> None:
 
 # Loads the returns dataset produced by the return-calculation pipeline.
 def load_returns(input_file=RETURNS_INPUT_FILE) -> pd.DataFrame:
-    if not input_file.exists():
-        raise FileNotFoundError(f"Returns file not found: {input_file}")
-
-    data = pd.read_csv(input_file)
-
-    if data.empty:
-        raise ValueError("Returns file is empty.")
-
+    data = read_validate_csv(
+        input_file,
+        required_columns=REQUIRED_COLUMNS,
+    )
+    validate_returns_data(data)
     return data
 
 

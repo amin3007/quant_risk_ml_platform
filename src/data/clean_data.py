@@ -2,11 +2,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.config import DATA_RAW_DIR, DATA_PROCESSED_DIR
+from src.config import DATA_RAW_DIR, DATA_PROCESSED_DIR, REPORTS_DIR
 
 
 RAW_INPUT_FILE = DATA_RAW_DIR / "prices_raw.csv"
 PROCESSED_OUTPUT_FILE = DATA_PROCESSED_DIR / "prices_clean.csv"
+DATA_QUALITY_REPORT_FILE = REPORTS_DIR / "data_quality_report.md"
 
 REQUIRED_COLUMNS = [
     "Date",
@@ -157,11 +158,11 @@ def save_cleaned_data(data: pd.DataFrame, output_file: Path) -> None:
 
 
 # Stores the human-readable data quality report alongside other project reports.
-def save_quality_report(report: str) -> None:
-    reports_dir = Path("reports")
-    ensure_output_directory(reports_dir)
-
-    output_file = reports_dir / "data_quality_report.md"
+def save_quality_report(
+    report: str,
+    output_file: Path = DATA_QUALITY_REPORT_FILE,
+) -> None:
+    ensure_output_directory(output_file.parent)
     output_file.write_text(report, encoding="utf-8")
 
     print(f"Data quality report saved to: {output_file}")

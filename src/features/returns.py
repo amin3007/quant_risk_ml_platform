@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from src.config import DATA_PROCESSED_DIR, REPORTS_DIR
+from src.data.csv_integrity import read_validate_csv, write_csv_checked
 
 
 PRICES_INPUT_FILE = DATA_PROCESSED_DIR / "prices_clean.csv"
@@ -14,6 +15,11 @@ REQUIRED_COLUMNS = [
     "Adj Close",
 ]
 
+RETURNS_REQUIRED_COLUMNS = REQUIRED_COLUMNS + [
+    "Daily Return",
+    "Log Return",
+]
+
 
 # Ensures both machine-readable returns and human-readable summaries have valid
 # destinations before the pipeline writes artifacts.
@@ -24,15 +30,10 @@ def ensure_output_directories() -> None:
 
 # Loads the cleaned price dataset produced by the data-cleaning pipeline.
 def load_clean_prices(input_file=PRICES_INPUT_FILE) -> pd.DataFrame:
-    if not input_file.exists():
-        raise FileNotFoundError(f"Clean price file not found: {input_file}")
-
-    data = pd.read_csv(input_file)
-
-    if data.empty:
-        raise ValueError("Clean price file is empty.")
-
-    return data
+    return read_validate_csv(
+        input_file,
+        required_columns=REQUIRED_COLUMNS,
+    )
 
 
 # Validates the price data needed for return calculations. Adjusted close must
@@ -146,7 +147,12 @@ def create_returns_summary(returns_data: pd.DataFrame) -> str:
 # Writes the return series used by future portfolio-risk and modeling stages.
 def save_returns(returns_data: pd.DataFrame) -> None:
     ensure_output_directories()
-    returns_data.to_csv(RETURNS_OUTPUT_FILE, index=False)
+    write_csv_checked(
+        returns_data,
+        RETURNS_OUTPUT_FILE,
+        required_columns=RETURNS_REQUIRED_COLUMNS,
+        index=False,
+    )
     print(f"Returns saved to: {RETURNS_OUTPUT_FILE}")
 
 

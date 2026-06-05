@@ -1,92 +1,356 @@
-# Quantitative Risk & ML Portfolio Intelligence Platform
+# Quantitative Risk Analysis Platform
 
-This is a Python portfolio project focused on quantitative finance, risk analytics, and machine learning preparation. It builds a reproducible workflow for downloading historical market data, cleaning price series, calculating returns, and producing core portfolio risk metrics.
+Python-based portfolio project for reproducible market data processing, return calculation, and historical risk analysis.
 
-The project is designed as a CV project to demonstrate practical data engineering, financial analysis, clean Python structure, testing, and a clear path toward machine learning-based market regime classification.
+The current version is a functional risk analysis prototype. It provides a CSV-based data pipeline, core risk metrics, correlation analysis, markdown reports, and automated tests. Machine learning, dashboard functionality, and backtesting are planned extensions and are not yet implemented.
 
-This project does not provide financial advice and does not attempt to predict exact future stock prices. The focus is historical risk analysis, transparent methodology, and professional project structure.
+This project is for educational and portfolio purposes only. It does not provide financial advice and does not attempt to predict future market prices.
 
-## Project Goal
+## Project Status
 
-The platform is being built for a fictional portfolio risk analyst who wants to understand asset performance, downside risk, and cross-asset relationships before moving into market regime classification.
+### Implemented
 
-Current outputs include:
-
-- Cleaned historical price data
-- Daily and logarithmic returns
-- Total and annualized return
-- Annualized volatility
-- Sharpe Ratio
-- Maximum Drawdown
-- Historical Value at Risk
-- Expected Shortfall
-- Asset correlation matrix
-- Markdown reports explaining the methodology and results
-
-## Current Progress
-
-Implemented so far:
-
-- Config-driven asset universe and date range
-- Historical market data download using `yfinance`
-- Raw and processed CSV data outputs
-- Data cleaning and validation pipeline
-- Daily and log return calculation
-- Returns summary report
-- Risk metrics module
+- Historical market data ingestion using `yfinance`
+- Raw price storage under `data/raw/`
+- Data cleaning pipeline for market price data
+- Cleaned price output under `data/processed/prices_clean.csv`
+- Daily simple returns and logarithmic returns
+- CSV integrity validation for generated artifacts
+- Risk metric calculation:
+  - Total Return
+  - Annualized Return
+  - Annualized Volatility
+  - Sharpe Ratio
+  - Maximum Drawdown
+  - Historical Value at Risk
+  - Expected Shortfall
 - Correlation matrix generation
-- Risk metrics report
-- Unit tests for selected core risk calculations
+- Markdown reports under `reports/`
+- Unit and integration tests with `pytest`
 
-The current version already demonstrates a working end-to-end analysis pipeline from market data ingestion to risk reporting.
+### Partially Implemented
 
-## What This Project Demonstrates
+- Modular project structure under `src/`
+- Reproducible pipeline stages
+- Data quality reporting
+- Foundation for later quantitative feature engineering
+- Test coverage for core pipeline behavior and edge cases
 
-- Python data pipeline development
-- pandas-based data cleaning and transformation
-- Financial return and risk metric calculation
-- Reproducible project structure
-- Defensive validation for data quality
-- Report generation for transparent analysis
-- Basic automated testing with `pytest`
-- A structured roadmap toward machine learning and dashboard development
+### Planned
 
-## Tech Stack
+- Rolling volatility features
+- Momentum features
+- Rolling drawdown features
+- Correlation and drawdown visualizations
+- Rule-based market regime labels
+- Baseline machine learning model with `scikit-learn`
+- Model evaluation with Accuracy, F1-score, and Confusion Matrix
+- Optional interactive dashboard
+- Optional backtesting module
+
+## Current Project Scope
+
+The project currently focuses on historical risk analysis.
+
+It answers questions such as:
+
+- Are the raw price data files readable and clean?
+- Can daily returns be calculated reproducibly?
+- What are the main historical risk and performance metrics per asset?
+- How strongly are assets correlated?
+- Can the pipeline be tested end to end?
+
+The project does not currently implement:
+
+- Market prediction
+- Trading signals
+- Automated trading
+- Backtesting
+- Portfolio optimization
+- A production dashboard
+- A trained machine learning model
+
+## Architecture
+
+```text
+data/
+  raw/
+    prices_raw.csv
+
+  processed/
+    prices_clean.csv
+    returns.csv
+    risk_metrics.csv
+    correlation_matrix.csv
+
+reports/
+  data_quality_report.md
+  returns_summary.md
+  risk_report.md
+
+src/
+  config.py
+
+  data/
+    clean_data.py
+    csv_integrity.py
+    fetch_data.py
+
+  features/
+    returns.py
+
+  risk/
+    metrics.py
+
+tests/
+  test_artifact_paths.py
+  test_clean_data_edge_cases.py
+  test_csv_integrity.py
+  test_pipeline_integration.py
+  test_returns_artifact_pipeline.py
+  test_returns_validation.py
+  test_risk_metrics.py
+  test_risk_metrics_extended.py
+```
+
+## Pipeline Overview
+
+```text
+Raw Market Data
+      |
+      v
+Data Cleaning
+      |
+      v
+Cleaned Prices CSV
+      |
+      v
+Return Calculation
+      |
+      v
+Returns CSV
+      |
+      v
+Risk Metrics and Correlation Matrix
+      |
+      v
+Markdown Reports
+```
+
+## Main Outputs
+
+The pipeline creates the following processed data files:
+
+```text
+data/processed/prices_clean.csv
+data/processed/returns.csv
+data/processed/risk_metrics.csv
+data/processed/correlation_matrix.csv
+```
+
+It also creates the following reports:
+
+```text
+reports/data_quality_report.md
+reports/returns_summary.md
+reports/risk_report.md
+```
+
+## Risk Metrics
+
+The current risk analysis includes:
+
+- **Total Return**  
+  Historical return from the first to the last available adjusted closing price.
+
+- **Annualized Return**  
+  Total return converted to a yearly scale using the configured trading-day assumption.
+
+- **Annualized Volatility**  
+  Standard deviation of daily returns annualized with the square-root-of-time convention.
+
+- **Sharpe Ratio**  
+  Historical risk-adjusted return based on the configured risk-free rate.
+
+- **Maximum Drawdown**  
+  Largest historical peak-to-trough decline.
+
+- **Historical Value at Risk**  
+  Historical lower-tail loss estimate reported as a positive loss number.
+
+- **Expected Shortfall**  
+  Average loss beyond the Value at Risk threshold.
+
+- **Correlation Matrix**  
+  Pairwise return correlation between all assets in the dataset.
+
+## Data and Artifact Validation
+
+The project includes CSV integrity checks to avoid silently using broken data artifacts.
+
+The validation checks include:
+
+- File existence
+- Readable CSV format
+- Non-empty data
+- Required columns
+- Rejection of malformed CSV files
+- Detection of unexpected index-like columns such as `Unnamed: 0`
+
+This is important because all downstream analytics depend on valid intermediate files, especially `returns.csv`.
+
+## Installation
+
+Create and activate a virtual environment.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Install dependencies.
+
+```powershell
+pip install -r requirements.txt
+```
+
+## How To Run The Pipeline
+
+Run the pipeline stages in order.
+
+```powershell
+.\.venv\Scripts\python.exe -m src.data.clean_data
+.\.venv\Scripts\python.exe -m src.features.returns
+.\.venv\Scripts\python.exe -m src.risk.metrics
+```
+
+This regenerates the cleaned prices, returns, risk metrics, correlation matrix, and markdown reports.
+
+## How To Run Tests
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+The test suite covers:
+
+- CSV artifact integrity
+- Data cleaning edge cases
+- Return calculation validation
+- Risk metric calculations
+- Pipeline integration from cleaning to risk metrics
+- Output path consistency
+
+## Technology Stack
+
+Currently used:
 
 - Python
 - pandas
 - NumPy
 - yfinance
 - pytest
-- Markdown reports
+- tabulate
 
-Planned additions:
+Installed or planned for later extensions:
 
 - scikit-learn
+- matplotlib
+- Plotly
 - Streamlit
-- Plotly or matplotlib
 
-## Repository Highlights
+## Roadmap
 
-- Source code is organized into data processing, return calculation, and risk analytics modules.
-- Generated CSV outputs are stored under `data/`.
-- Markdown reports are stored under `reports/`.
-- Tests are stored under `tests/`.
+### Step 1: Stabilization
 
-## Next Steps
+Completed focus:
 
-Next features to implement:
+- Regenerate broken `returns.csv`
+- Validate CSV artifacts
+- Ensure risk metrics can be calculated from saved returns
 
-1. Add rolling volatility, momentum, drawdown, and trend features.
-2. Create rule-based market regime labels such as bullish, bearish, volatile, and sideways.
-3. Train a baseline machine learning classifier for regime detection.
-4. Evaluate model performance with F1-score, confusion matrix, and clear limitations.
-5. Build a Streamlit dashboard for interactive portfolio and regime analysis.
-6. Expand test coverage for return calculations, validation rules, and risk metrics.
-7. Improve documentation with screenshots once the dashboard is available.
+### Step 2: Project Structure Cleanup
+
+Completed focus:
+
+- Rename feature package to `src/features/`
+- Use valid `__init__.py` files
+- Clean up package structure
+
+### Step 3: Path and Artifact Consistency
+
+Completed focus:
+
+- Use centralized paths from `src/config.py`
+- Store processed CSV files under `data/processed/`
+- Store reports under `reports/`
+
+### Step 4: Test Coverage Expansion
+
+Completed focus:
+
+- Add unit tests for risk metrics
+- Add edge case tests for data cleaning and return calculation
+- Add integration tests for the pipeline
+
+### Step 5: Documentation Cleanup
+
+Current focus:
+
+- Clearly document what is implemented
+- Clearly separate implemented, partially implemented, and planned features
+- Avoid overstating ML, dashboard, or backtesting functionality
+
+### Step 6: Quant Feature Engineering
+
+Planned:
+
+- Rolling volatility
+- Momentum
+- Rolling drawdown
+- Drawdown status
+- Correlation and drawdown visualizations
+
+### Step 7: Machine Learning Baseline
+
+Planned:
+
+- Rule-based regime labels
+- Feature matrix construction
+- Time-aware train-test split
+- Baseline classifier with `scikit-learn`
+- Evaluation with Accuracy, F1-score, and Confusion Matrix
+- Clear documentation of model limitations
+
+## Limitations
+
+The current project is not a trading system.
+
+It does not:
+
+- Predict exact future stock prices
+- Generate trading recommendations
+- Execute trades
+- Backtest trading strategies
+- Optimize portfolios
+- Provide investment advice
+
+The current focus is historical risk analysis and building a stable foundation for later quantitative feature engineering and machine learning experiments.
 
 ## Portfolio Positioning
 
-This project is intended to show the ability to turn an applied finance idea into a structured technical product. It connects financial domain knowledge with Python implementation, data validation, analytical reporting, and a realistic machine learning roadmap.
+This project demonstrates the ability to build a structured Python analytics project in a financial domain.
 
-The current stage is suitable for demonstrating data processing, risk analytics, and software project organization. The next stage will add feature engineering, classification models, and an interactive dashboard to make the project stronger for data science, quantitative analytics, or financial technology roles.
+It highlights:
+
+- Reproducible data pipelines
+- Defensive data validation
+- Financial risk metric implementation
+- Clear artifact organization
+- Automated testing
+- Honest project documentation
+- A realistic roadmap toward machine learning
+
+The strongest current positioning is:
+
+> A reproducible Python risk analysis prototype with clean data artifacts, tested risk metrics, and a clear roadmap toward market regime classification.
